@@ -64,6 +64,13 @@ vlc_module_begin ()
         set_capability( "encoder", 101 )
         set_subcategory( SUBCAT_INPUT_SCODEC )
         set_callbacks( webvtt_OpenEncoder, webvtt_CloseEncoder )
+    add_submodule()
+        set_description( N_("Raw WebVTT muxer") )
+        set_capability( "sout mux", 0 )
+        set_category( CAT_SOUT )
+        set_subcategory( SUBCAT_SOUT_MUX )
+        add_shortcut( "rawvtt" )
+        set_callbacks( webvtt_OpenMuxer, webvtt_CloseMuxer )
 #endif
 vlc_module_end ()
 
