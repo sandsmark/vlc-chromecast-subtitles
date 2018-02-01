@@ -1599,6 +1599,7 @@ void *SearchThread(void *data)
 
 static int OpenRD( vlc_object_t *p_this )
 {
+    return -1;
     vlc_renderer_discovery_t *p_rd = ( vlc_renderer_discovery_t* )p_this;
     renderer_discovery_sys_t *p_sys  = new(std::nothrow) renderer_discovery_sys_t;
 

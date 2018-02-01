@@ -101,6 +101,7 @@ class ChromecastCommunication
 public:
     ChromecastCommunication( vlc_object_t* module,
                              std::string serverPath, unsigned int serverPort,
+                             std::string vttPath,
                              const char* targetIP, unsigned int devicePort );
     ~ChromecastCommunication();
     /**
@@ -122,7 +123,7 @@ public:
     unsigned msgReceiverClose(const std::string& destinationId);
     unsigned msgAuth();
     unsigned msgPlayerLoad( const std::string& destinationId,
-                            const std::string& mime, const vlc_meta_t *p_meta );
+                            const std::string& mime, const vlc_meta_t *p_meta, bool meta );
     unsigned msgPlayerPlay( const std::string& destinationId, int64_t mediaSessionId );
     unsigned msgPlayerStop( const std::string& destinationId, int64_t mediaSessionId );
     unsigned msgPlayerPause( const std::string& destinationId, int64_t mediaSessionId );
@@ -131,6 +132,8 @@ public:
                             const std::string & currentTime );
     unsigned msgPlayerSetVolume( const std::string& destinationId, int64_t mediaSessionId,
                                  float volume, bool mute);
+    unsigned msgSetSubtitlesEnabled( const std::string& destinationId, int64_t mediaSessionId,
+                                     bool enabled );
     ssize_t receive( uint8_t *p_data, size_t i_size, int i_timeout, bool *pb_timeout );
 
     const std::string getServerIp()
@@ -158,6 +161,7 @@ private:
     std::string m_serverIp;
     const std::string m_serverPath;
     const unsigned m_serverPort;
+    const std::string m_vttPath;
 };
 
 /*****************************************************************************
@@ -175,6 +179,7 @@ struct intf_sys_t
 
     void setRetryOnFail(bool);
     void setHasInput(const std::string mime_type = "");
+    void setSubtitlesEnabled(bool enabled);
 
     void setOnInputEventCb(on_input_event_itf on_input_event, void *on_input_event_data);
     void setDemuxEnabled(bool enabled, on_paused_changed_itf on_paused_changed,
@@ -190,6 +195,7 @@ struct intf_sys_t
     unsigned int getHttpStreamPort() const;
     std::string getHttpStreamPath() const;
     std::string getHttpArtRoot() const;
+    std::string getHttpVttPath() const;
 
     int httpd_file_fill( uint8_t *psz_request, uint8_t **pp_data, int *pi_data );
     void interrupt_wake_up();
@@ -278,6 +284,7 @@ private:
     bool m_cc_eof;
     bool m_pace;
     bool m_interrupted;
+    bool m_subtitles_enabled;
 
     vlc_meta_t *m_meta;
 

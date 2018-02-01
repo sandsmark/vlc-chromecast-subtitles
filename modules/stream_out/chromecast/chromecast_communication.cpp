@@ -35,7 +35,8 @@
 #include <iomanip>
 
 ChromecastCommunication::ChromecastCommunication( vlc_object_t* p_module,
-    std::string serverPath, unsigned int serverPort, const char* targetIP, unsigned int devicePort )
+    std::string serverPath, unsigned int serverPort, std::string vttPath,
+    const char* targetIP, unsigned int devicePort )
     : m_module( p_module )
     , m_creds( NULL )
     , m_tls( NULL )
@@ -43,6 +44,7 @@ ChromecastCommunication::ChromecastCommunication( vlc_object_t* p_module,
     , m_requestId( 1 )
     , m_serverPath( serverPath )
     , m_serverPort( serverPort )
+    , m_vttPath( vttPath )
 {
     if (devicePort == 0)
         devicePort = CHROMECAST_CONTROL_PORT;
@@ -344,25 +346,45 @@ std::string ChromecastCommunication::GetMedia( const std::string& mime,
         }
     }
 
-    std::stringstream chromecast_url;
-    chromecast_url << "http://" << m_serverIp << ":" << m_serverPort << m_serverPath;
+    std::stringstream stream_url;
+    stream_url << "http://" << m_serverIp << ":" << m_serverPort << m_serverPath;
 
-    msg_Dbg( m_module, "s_chromecast_url: %s", chromecast_url.str().c_str());
+    std::stringstream vtt_url;
+    vtt_url << "http://" << m_serverIp << ":" << m_serverPort << m_vttPath;
 
-    ss << "\"contentId\":\"" << chromecast_url.str() << "\""
+    msg_Dbg( m_module, "s_stream_url: %s", stream_url.str().c_str());
+
+    ss << "\"contentId\":\"" << stream_url.str() << "\""
        << ",\"streamType\":\"LIVE\""
-       << ",\"contentType\":\"" << mime << "\"";
-
+       << ",\"contentType\":\"" << mime << "\""
+#if 1
+       << ",\"tracks\": [{"
+       <<   "\"trackId\": 1,"
+       <<   "\"trackContentId\": \"" << vtt_url.str() << "\","
+       <<   "\"trackContentType\": \"text/vtt\","
+       <<   "\"type\": \"TEXT\","
+       <<   "\"subType\": \"SUBTITLES\","
+       <<   "\"language\": \"en-US\""
+       <<  "}]";
+#else
+;
+#endif
     return ss.str();
 }
 
 unsigned ChromecastCommunication::msgPlayerLoad( const std::string& destinationId,
-                                             const std::string& mime, const vlc_meta_t *p_meta )
+                                             const std::string& mime, const vlc_meta_t *p_meta,
+                                             bool subtitles_enabled )
 {
     unsigned id = getNextRequestId();
+    const std::string text_tracks = subtitles_enabled ?
+       "\"enableTextTracks\":\"true\",\"activeTrackIds\":[1]," :
+       "\"enableTextTracks\":\"false\",\"activeTrackIds\":[],";
+
     std::stringstream ss;
     ss << "{\"type\":\"LOAD\","
        <<  "\"media\":{" << GetMedia( mime, p_meta ) << "},"
+       <<  text_tracks
        <<  "\"autoplay\":\"false\","
        <<  "\"requestId\":" << id
        << "}";
@@ -425,6 +447,24 @@ unsigned ChromecastCommunication::msgPlayerSetVolume( const std::string& destina
        <<  "\"volume\":{\"level\":" << f_volume << ",\"muted\":" << ( b_mute ? "true" : "false" ) << "},"
        <<  "\"mediaSessionId\":" << mediaSessionId << ","
        <<  "\"requestId\":" << id
+       << "}";
+
+    return pushMediaPlayerMessage( destinationId, ss ) == VLC_SUCCESS ? id : kInvalidId;
+}
+
+unsigned ChromecastCommunication::msgSetSubtitlesEnabled( const std::string& destinationId,
+                                                      int64_t mediaSessionId,
+                                                      bool enabled )
+{
+    assert(mediaSessionId != 0);
+    unsigned id = getNextRequestId();
+
+    std::stringstream ss;
+    ss << "{\"type\":\"EDIT_TRACKS_INFO\","
+       <<  "\"activeTrackIds\":[" << ( enabled ? "1" : "" ) << "],"
+       <<  "\"enableTextTracks\":\"" << ( enabled ? "true" : "false" ) << "\","
+       <<  "\"mediaSessionId\":" << mediaSessionId << ","
+       <<  "\"requestId\":" << m_requestId++
        << "}";
 
     return pushMediaPlayerMessage( destinationId, ss ) == VLC_SUCCESS ? id : kInvalidId;

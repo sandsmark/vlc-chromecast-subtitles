@@ -109,6 +109,7 @@ intf_sys_t::intf_sys_t(vlc_object_t * const p_this, int port, std::string device
  , m_input_eof( false )
  , m_cc_eof( false )
  , m_pace( false )
+ , m_subtitles_enabled( false )
  , m_meta( NULL )
  , m_httpd( httpd_host, port )
  , m_httpd_file(NULL)
@@ -119,7 +120,7 @@ intf_sys_t::intf_sys_t(vlc_object_t * const p_this, int port, std::string device
  , m_pingRetriesLeft( PING_WAIT_RETRIES )
 {
     m_communication = new ChromecastCommunication( p_this,
-        getHttpStreamPath(), getHttpStreamPort(),
+        getHttpStreamPath(), getHttpStreamPort(), getHttpVttPath(),
         m_device_addr.c_str(), m_device_port );
 
     m_ctl_thread_interrupt = vlc_interrupt_create();
@@ -216,6 +217,7 @@ void intf_sys_t::reinit()
         m_communication = new ChromecastCommunication( m_module,
                                                        getHttpStreamPath(),
                                                        getHttpStreamPort(),
+                                                       getHttpVttPath(),
                                                        m_device_addr.c_str(),
                                                        m_device_port );
     } catch (const std::runtime_error& err )
@@ -365,7 +367,8 @@ void intf_sys_t::tryLoad()
     // Reset the mediaSessionID to allow the new session to become the current one.
     // we cannot start a new load when the last one is still processing
     m_last_request_id =
-        m_communication->msgPlayerLoad( m_appTransportId, m_mime, m_meta );
+        m_communication->msgPlayerLoad( m_appTransportId, m_mime, m_meta,
+                                        m_subtitles_enabled );
     if( m_last_request_id != ChromecastCommunication::kInvalidId )
         m_state = Loading;
 }
@@ -536,6 +539,19 @@ void intf_sys_t::sendInputEvent(enum cc_input_event event, union cc_input_arg ar
 
     if (on_input_event)
         on_input_event(data, event, arg);
+}
+
+void intf_sys_t::setSubtitlesEnabled( bool enabled )
+{
+    vlc::threads::mutex_locker lock( m_lock );
+
+    if ( m_mediaSessionId == 0 )
+    {
+        m_subtitles_enabled = enabled;
+        return;
+    }
+    m_communication->msgSetSubtitlesEnabled( m_appTransportId, m_mediaSessionId,
+                                             enabled );
 }
 
 /**
@@ -1141,6 +1157,11 @@ std::string intf_sys_t::getHttpStreamPath() const
 std::string intf_sys_t::getHttpArtRoot() const
 {
     return m_httpd.m_root + "/art";
+}
+
+std::string intf_sys_t::getHttpVttPath() const
+{
+    return m_httpd.m_root + "/web.vtt";
 }
 
 bool intf_sys_t::isFinishedPlaying()

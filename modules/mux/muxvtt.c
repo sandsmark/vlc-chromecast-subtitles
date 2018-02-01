@@ -107,6 +107,7 @@ static block_t * UnpackISOBMFF( block_t *p_block )
             if( psz_iden )
                 vlc_memstream_printf( &ms, "%s\n", psz_iden );
 
+            //vlc_memstream_printf( &ms, "WEBVTT\n\n1\n" );
             OutputTime( &ms, p_block->i_dts - VLC_TICK_0 );
             vlc_memstream_printf( &ms, " --> " );
             OutputTime( &ms, p_block->i_dts - VLC_TICK_0 + p_block->i_length );
@@ -128,7 +129,7 @@ static block_t * UnpackISOBMFF( block_t *p_block )
 
     if( vlc_memstream_close( &ms ) )
         return NULL;
-
+fprintf(stderr, "new block: %s\n", ms.ptr);
     return block_heap_Alloc( ms.ptr, ms.length );
 }
 
