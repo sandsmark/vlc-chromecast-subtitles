@@ -360,7 +360,7 @@ static int Demux( demux_t *p_demux )
         }
 
         while( tk->i_current_subtitle < tk->i_subtitles &&
-               tk->p_subtitles[tk->i_current_subtitle].i_start < i_maxdate )
+               tk->p_subtitles[tk->i_current_subtitle].i_start < i_maxdate  + VLC_TICK_FROM_SEC(10))
         {
             int i_pos = tk->p_subtitles[tk->i_current_subtitle].i_vobsub_location;
             block_t *p_block;

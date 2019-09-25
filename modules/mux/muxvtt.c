@@ -129,7 +129,7 @@ static block_t * UnpackISOBMFF( block_t *p_block )
 
     if( vlc_memstream_close( &ms ) )
         return NULL;
-fprintf(stderr, "new block: %s\n", ms.ptr);
+
     return block_heap_Alloc( ms.ptr, ms.length );
 }
 

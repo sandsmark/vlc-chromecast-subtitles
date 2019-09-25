@@ -846,7 +846,7 @@ static int Demux( demux_t *p_demux )
 
     while( p_sys->subtitles.i_current < p_sys->subtitles.i_count &&
            ( p_sys->subtitles.p_array[p_sys->subtitles.i_current].i_start *
-             p_sys->f_rate ) <= i_barrier )
+             p_sys->f_rate ) <= i_barrier + VLC_TICK_FROM_SEC(10) )
     {
         const subtitle_t *p_subtitle = &p_sys->subtitles.p_array[p_sys->subtitles.i_current];
 

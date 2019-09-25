@@ -356,7 +356,7 @@ static int Demux( demux_t* p_demux )
 
     /* Last one must be an end time */
     while( p_sys->times.i_current + 1 < p_sys->times.i_count &&
-           tt_time_Convert( &p_sys->times.p_array[p_sys->times.i_current] ) <= p_sys->i_next_demux_time )
+           tt_time_Convert( &p_sys->times.p_array[p_sys->times.i_current] ) <= p_sys->i_next_demux_time + VLC_TICK_FROM_SEC(10) )
     {
         const vlc_tick_t i_playbacktime =
                 tt_time_Convert( &p_sys->times.p_array[p_sys->times.i_current] );

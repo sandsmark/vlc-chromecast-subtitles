@@ -350,7 +350,7 @@ std::string ChromecastCommunication::GetMedia( const std::string& mime,
     stream_url << "http://" << m_serverIp << ":" << m_serverPort << m_serverPath;
 
     std::stringstream vtt_url;
-    vtt_url << "http://" << m_serverIp << ":" << m_serverPort << m_vttPath;
+    vtt_url << "http://" << m_serverIp << ":" << (m_serverPort+1) << m_vttPath;
 
     msg_Dbg( m_module, "s_stream_url: %s", stream_url.str().c_str());
 
@@ -365,7 +365,15 @@ std::string ChromecastCommunication::GetMedia( const std::string& mime,
        <<   "\"type\": \"TEXT\","
        <<   "\"subType\": \"SUBTITLES\","
        <<   "\"language\": \"en-US\""
-       <<  "}]";
+       <<  "}]"
+       << ",\"textTrackStyle\": {"
+       <<   "\"backgroundColor\": \"#FFFFFF00\","
+       <<   "\"edgeType\": \"DROP_SHADOW\","
+       <<   "\"edgeColor\": \"#000000FF\","
+       <<   "\"fontGenericFamily\": \"SANS_SERIF\","
+       <<   "\"fontScale\": 1.1,"
+       <<   "\"fontStyle\": \"NORMAL\""
+       <<  "}";
 #else
 ;
 #endif

@@ -546,7 +546,7 @@ static int Demux( demux_t *p_demux )
     vlc_tick_t i_barrier = p_sys->i_next_demux_time;
 
     while( p_sys->index.i_current < p_sys->index.i_count &&
-           p_sys->index.p_array[p_sys->index.i_current].time <= i_barrier )
+           p_sys->index.p_array[p_sys->index.i_current].time <= i_barrier + VLC_TICK_FROM_SEC(10) )
     {
         /* Find start and end of our interval */
         vlc_tick_t i_start_time = p_sys->index.p_array[p_sys->index.i_current].time;

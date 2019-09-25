@@ -84,16 +84,18 @@ private:
     bool               m_eof;
     const bool         m_live;
     std::string        m_mime;
+    bool			   m_first;
 };
 
 typedef struct sout_stream_id_sys_t sout_stream_id_sys_t;
 
 struct sout_stream_sys_t
 {
-    sout_stream_sys_t(httpd_host_t *httpd_host, intf_sys_t * const intf, bool has_video, int port)
+    sout_stream_sys_t(httpd_host_t *httpd_host, httpd_host_t *httpd_host_vtt, intf_sys_t * const intf, bool has_video, int port)
         : httpd_host(httpd_host)
+        , httpd_host_vtt(httpd_host_vtt)
         , access_out_stream(httpd_host, intf, true)
-        , access_out_vtt(httpd_host, intf, false)
+        , access_out_vtt(httpd_host_vtt, intf, false)
         , p_out(NULL)
         , p_spu_out(NULL)
         , p_intf(intf)
@@ -137,6 +139,7 @@ struct sout_stream_sys_t
     void stopSoutSpuChain(sout_stream_t* p_stream);
 
     httpd_host_t      *httpd_host;
+    httpd_host_t      *httpd_host_vtt;
     sout_access_out_sys_t access_out_stream;
     sout_access_out_sys_t access_out_vtt;
 
@@ -305,7 +308,13 @@ static int ProxySend(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
                 return VLC_SUCCESS;
             }
         }
-
+        
+        vlc_tick_t pause_delay = p_sys->p_intf->getPauseDelay();
+        if( p_buffer->i_pts != VLC_TICK_INVALID )
+            p_buffer->i_pts -= pause_delay;
+        if( p_buffer->i_dts != VLC_TICK_INVALID )
+            p_buffer->i_dts -= pause_delay;
+        
         int ret = sout_StreamIdSend(p_stream->p_next, id, p_buffer);
         if (ret == VLC_SUCCESS && !p_sys->cc_has_input)
         {
@@ -361,6 +370,7 @@ sout_access_out_sys_t::sout_access_out_sys_t(httpd_host_t *httpd_host,
     , m_copy_chain(NULL)
     , m_eof(true)
     , m_live(live)
+    , m_first(true)
 {
     m_fifo = block_FifoNew();
     if (!m_fifo)
@@ -368,12 +378,10 @@ sout_access_out_sys_t::sout_access_out_sys_t(httpd_host_t *httpd_host,
     if (live)
     {
         m_url = httpd_UrlNew(httpd_host, intf->getHttpStreamPath().c_str(), NULL, NULL);
-        fprintf(stderr, "new stream url: %s\n", intf->getHttpStreamPath().c_str());
     }
     else
     {
         m_url = httpd_UrlNew(httpd_host, intf->getHttpVttPath().c_str(), NULL, NULL);
-        fprintf(stderr, "new vtt url: %s\n", intf->getHttpVttPath().c_str());
     }
     if (m_url == NULL)
     {
@@ -469,6 +477,7 @@ void sout_access_out_sys_t::prepare(sout_stream_t *p_stream, const std::string &
         m_intf->setPacing(false);
     m_mime = mime;
     m_eof = false;
+    m_first = true;
     vlc_fifo_Unlock(m_fifo);
 }
 
@@ -497,20 +506,38 @@ int sout_access_out_sys_t::url_cb(httpd_client_t *cl, httpd_message_t *answer,
     }
 
     /* Send data per 512kB minimum */
-    static int wait = 0;
-    size_t i_min_buffer = m_live ? 524288 : wait;
-    while (m_client && vlc_fifo_GetBytes(m_fifo) < i_min_buffer && !m_eof)
-        vlc_fifo_Wait(m_fifo);
+    size_t i_min_buffer = m_live ? 524288 : 1;
+    int k = 0;
+    while (m_client && vlc_fifo_GetBytes(m_fifo) < i_min_buffer && !m_eof){
+		if (m_live){
+			vlc_fifo_Wait(m_fifo);
+		} else {
+			vlc_fifo_Unlock(m_fifo);
+			vlc_tick_sleep( VLC_TICK_FROM_SEC(1) );
+			vlc_fifo_Lock(m_fifo);
+			k++;
+			if (k == 5)
+				break;
+		}
+	}
+	
 
-    if (!m_live && vlc_fifo_GetBytes(m_fifo) == 0)
+    if (!m_live && vlc_fifo_GetBytes(m_fifo) == 0 && !m_eof)
     {
-        static const char dummy[] = "0:00:00.000 --> 0:00:00.000\n\n";
-        block_t *p_block = block_Alloc(sizeof(dummy));
-        strcpy((char *)p_block->p_buffer, dummy);
-        vlc_fifo_QueueUnlocked(m_fifo, p_block);
-        wait = 1;
-    }
-
+		static const char dummy_first[] = "WEBVTT\n\nNOTE .";
+		static const char dummy_generic[] = "NOTE .\n\n";
+		const char* dummy = m_first ? dummy_first : dummy_generic;
+		block_t *p_block = block_Alloc(strlen(dummy));
+		memcpy((char *)p_block->p_buffer, dummy, strlen(dummy));
+		vlc_fifo_QueueUnlocked(m_fifo, p_block);
+		
+    } else {
+		
+		m_first = false;
+	}
+    
+    
+	
     block_t *p_block = NULL;
     if (m_client && vlc_fifo_GetBytes(m_fifo) > 0)
     {
@@ -589,7 +616,6 @@ int sout_access_out_sys_t::url_cb(httpd_client_t *cl, httpd_message_t *answer,
     if (!answer->i_body)
         httpd_MsgAdd(answer, "Connection", "close");
 
-if (!m_live) fprintf(stderr, "VTT READ: %d\n", answer->i_body);
     vlc_fifo_Unlock(m_fifo);
 
     return VLC_SUCCESS;
@@ -723,7 +749,6 @@ static void *Add(sout_stream_t *p_stream, const es_format_t *p_fmt)
         p_sys->streams.push_back( p_sys_id );
         p_sys->es_changed = true;
     }
-    fprintf(stderr, "cast ADD: %d\n", p_fmt->i_cat );
     return p_sys_id;
 }
 
@@ -1051,7 +1076,6 @@ bool sout_stream_sys_t::UpdateSPU( sout_stream_t *p_stream,
         enable = startSoutSpuChain( p_stream, p_spu_stream, ss_spu_out.str() );
     }
 
-fprintf(stderr, "UpdateSPU: %p %d\n", p_spu_stream, enable);
     p_intf->setSubtitlesEnabled( enable );
 
     return true;
@@ -1286,9 +1310,7 @@ static int Send(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
     sout_stream_sys_t *p_sys = reinterpret_cast<sout_stream_sys_t *>( p_stream->p_sys );
     sout_stream_id_sys_t *id = reinterpret_cast<sout_stream_id_sys_t *>( _id );
     vlc_mutex_locker locker(&p_sys->lock);
-
-    if (id == p_sys->out_spu_stream)
-        fprintf(stderr, "SEND SPU\n");
+        
 
     if( p_sys->isFlushing( p_stream ) || p_sys->cc_eof )
     {
@@ -1309,10 +1331,11 @@ static int Send(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
             block_ChainRelease( p_buffer );
             return VLC_EGENERIC;
         }
+        vlc_tick_t pause_delay = p_sys->p_intf->getPauseDelay();
         if( p_buffer->i_pts != VLC_TICK_INVALID )
-            p_buffer->i_pts -= p_sys->first_video_keyframe_pts;
+            p_buffer->i_pts -= (p_sys->first_video_keyframe_pts+pause_delay);
         if( p_buffer->i_dts != VLC_TICK_INVALID )
-            p_buffer->i_dts -= p_sys->first_video_keyframe_pts;
+            p_buffer->i_dts -= (p_sys->first_video_keyframe_pts+pause_delay);
     }
 
     int ret = sout_StreamIdSend(id->p_out, next_id, p_buffer);
@@ -1394,6 +1417,7 @@ static int Open(vlc_object_t *p_this)
     intf_sys_t *p_intf = NULL;
     char *psz_ip = NULL;
     httpd_host_t *httpd_host = NULL;
+    httpd_host_t *httpd_host_vtt = NULL;
     bool b_supports_video = true;
     int i_local_server_port;
     int i_device_port;
@@ -1418,6 +1442,11 @@ static int Open(vlc_object_t *p_this)
     httpd_host = vlc_http_HostNew(VLC_OBJECT(p_stream));
     if (httpd_host == NULL)
         goto error;
+        
+    var_SetInteger(p_stream, "http-port", i_local_server_port+1);
+    httpd_host_vtt = vlc_http_HostNew(VLC_OBJECT(p_stream));
+    if (httpd_host == NULL)
+        goto error;
 
     try
     {
@@ -1439,7 +1468,7 @@ static int Open(vlc_object_t *p_this)
 
     try
     {
-        p_sys = new sout_stream_sys_t( httpd_host, p_intf, b_supports_video,
+        p_sys = new sout_stream_sys_t( httpd_host, httpd_host_vtt, p_intf, b_supports_video,
                                                     i_local_server_port );
     }
     catch ( std::exception& ex )
@@ -1476,6 +1505,8 @@ error:
     delete p_intf;
     if (httpd_host)
         httpd_HostDelete(httpd_host);
+    if (httpd_host_vtt)
+        httpd_HostDelete(httpd_host_vtt);
     free(psz_ip);
     delete p_sys;
     return VLC_EGENERIC;
@@ -1496,9 +1527,11 @@ static void Close(vlc_object_t *p_this)
     assert(p_sys->streams.empty() && p_sys->out_streams.empty());
 
     httpd_host_t *httpd_host = p_sys->httpd_host;
+    httpd_host_t *httpd_host_vtt = p_sys->httpd_host_vtt;
     delete p_sys->p_intf;
     delete p_sys;
     /* Delete last since p_intf and p_sys depends on httpd_host */
     httpd_HostDelete(httpd_host);
+    httpd_HostDelete(httpd_host_vtt);
 }
 
