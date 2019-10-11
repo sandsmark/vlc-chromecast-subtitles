@@ -1329,7 +1329,7 @@ static int Send(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
         if( p_sys->first_video_keyframe_pts == -1 )
         {
             block_ChainRelease( p_buffer );
-            return VLC_EGENERIC;
+            return VLC_SUCCESS;
         }
         vlc_tick_t pause_delay = p_sys->p_intf->getPauseDelay();
         if( p_buffer->i_pts != VLC_TICK_INVALID )

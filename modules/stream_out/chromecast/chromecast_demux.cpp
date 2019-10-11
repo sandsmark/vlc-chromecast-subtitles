@@ -313,7 +313,7 @@ struct demux_cc
         case DEMUX_GET_TIME:
         {
             vlc_tick_t time = getTime();
-            if( time >= 0 )
+            if( time >= 0 || demux_Control( p_demux_filter->p_next, DEMUX_GET_TIME, &time ) == VLC_SUCCESS)
             {
                 *va_arg(args, vlc_tick_t *) = time;
                 return VLC_SUCCESS;
