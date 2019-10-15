@@ -40,6 +40,7 @@
 #include <atomic>
 #include <sstream>
 #include <queue>
+#include <iomanip>
 
 #ifndef PROTOBUF_INLINE_NOT_IN_HEADERS
 # define PROTOBUF_INLINE_NOT_IN_HEADERS 0
@@ -68,6 +69,20 @@ static const std::string NAMESPACE_RECEIVER         = "urn:x-cast:com.google.cas
 
 // Media player Chromecast app id
 #define APP_ID "CC1AD845" // Default media player aka DEFAULT_MEDIA_RECEIVER_APPLICATION_ID
+
+struct CCTextTrackStyle
+{
+	int text_color;
+    int text_alpha;
+    int bg_color;
+    int bg_alpha;
+    const char* edge_type;
+    int edge_color;
+    int edge_alpha;
+    const char* font_family;
+    float font_scale;
+    const char* font_style;
+};
 
 enum States
 {
@@ -102,7 +117,8 @@ public:
     ChromecastCommunication( vlc_object_t* module,
                              std::string serverPath, unsigned int serverPort,
                              std::string vttPath,
-                             const char* targetIP, unsigned int devicePort );
+                             const char* targetIP, unsigned int devicePort,
+                             CCTextTrackStyle textTrackStyle );
     ~ChromecastCommunication();
     /**
      * @brief disconnect close the connection with the chromecast
@@ -162,6 +178,7 @@ private:
     const std::string m_serverPath;
     const unsigned m_serverPort;
     const std::string m_vttPath;
+    CCTextTrackStyle m_textTrackStyle;
 };
 
 /*****************************************************************************
@@ -174,7 +191,7 @@ struct intf_sys_t
         Stop,
     };
     intf_sys_t(vlc_object_t * const p_this, int local_port, std::string device_addr,
-               int device_port, httpd_host_t *);
+               int device_port, httpd_host_t *, CCTextTrackStyle);
     ~intf_sys_t();
 
     void setRetryOnFail(bool);
@@ -290,6 +307,7 @@ private:
     bool m_pace;
     bool m_interrupted;
     bool m_subtitles_enabled;
+    CCTextTrackStyle m_textTrackStyle;
 
     vlc_meta_t *m_meta;
 

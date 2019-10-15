@@ -226,6 +226,53 @@ static const char *const ppsz_sout_options[] = {
 #define PORT_TEXT N_("Chromecast port")
 #define PORT_LONGTEXT N_("The port used to talk to the Chromecast.")
 
+
+#define OPACITY_LONGTEXT N_("The opacity (inverse of transparency) of the " \
+    "text that will be rendered on the video. 0 = transparent, " \
+    "255 = totally opaque." )
+#define TEXT_COLOR_TEXT N_("Subtitles text color")
+#define TEXT_OPACITY_TEXT N_("Subtitles text opacity")
+#define BG_COLOR_TEXT N_("Subtitles background color")
+#define BG_OPACITY_TEXT N_("Subtitles background opacity")
+#define EGDE_TYPE_TEXT N_("Subtitles edge type")
+#define EGDE_COLOR_TEXT N_("Subtitles edge color")
+#define EGDE_OPACITY_TEXT N_("Subtitles edge opacity")
+#define FONT_FAMILY_TEXT N_("Subtitles font family")
+#define FONT_SCALE_TEXT N_("Subtitles font scale")
+#define FONT_STYLE_TEXT N_("Subtitles font style")
+
+static const int pi_color_values[] = {
+  0x00000000, 0x00808080, 0x00C0C0C0, 0x00FFFFFF, 0x00800000,
+  0x00FF0000, 0x00FF00FF, 0x00FFFF00, 0x00808000, 0x00008000, 0x00008080,
+  0x0000FF00, 0x00800080, 0x00000080, 0x000000FF, 0x0000FFFF };
+
+static const char *const ppsz_color_descriptions[] = {
+  N_("Black"), N_("Gray"), N_("Silver"), N_("White"), N_("Maroon"),
+  N_("Red"), N_("Fuchsia"), N_("Yellow"), N_("Olive"), N_("Green"), N_("Teal"),
+  N_("Lime"), N_("Purple"), N_("Navy"), N_("Blue"), N_("Aqua") };
+  
+static const int pi_edge_type[] = {
+    0, 1, 2, 3, 4
+};
+static const char *const ppsz_edge_type[] = {
+    "NONE", "OUTLINE", "DROP_SHADOW", "RAISED", "DEPRESSED"
+};
+
+static const int pi_font_family[] = {
+    0, 1, 2, 3, 4, 5, 6
+};
+static const char *const ppsz_font_family[] = {
+    "SANS_SERIF", "MONOSPACED_SANS_SERIF", "SERIF", 
+    "MONOSPACED_SERIF", "CASUAL", "CURSIVE", "SMALL_CAPITALS"
+};
+
+static const int pi_font_style[] = {
+    0, 1, 2, 3
+};
+static const char *const ppsz_font_style[] = {
+    "NORMAL", "BOLD", "BOLD_ITALIC", "ITALIC"
+};
+
 /* Fifo size after we tell the demux to pace */
 #define HTTPD_BUFFER_PACE INT64_C(2 * 1024 * 1024) /* 2 MB */
 /* Fifo size after we drop packets (should not happen) */
@@ -249,6 +296,53 @@ vlc_module_begin ()
     add_bool(SOUT_CFG_PREFIX "video", true, NULL, NULL, false)
         change_private()
     add_integer(SOUT_CFG_PREFIX "http-port", HTTP_PORT, HTTP_PORT_TEXT, HTTP_PORT_LONGTEXT, false)
+    
+    add_rgb(SOUT_CFG_PREFIX "spu-text-color", 0x00FFFFFF, TEXT_COLOR_TEXT, NULL)
+        change_integer_list( pi_color_values, ppsz_color_descriptions )
+        change_integer_range( 0x000000, 0xFFFFFF )
+        change_safe()
+        
+    add_integer_with_range( SOUT_CFG_PREFIX "spu-text-opacity", 255, 0, 255,
+        TEXT_OPACITY_TEXT, OPACITY_LONGTEXT, false )
+        change_safe()
+    
+    add_rgb(SOUT_CFG_PREFIX "spu-bg-color", 0x00000000, BG_COLOR_TEXT, NULL)
+        change_integer_list( pi_color_values, ppsz_color_descriptions )
+        change_integer_range( 0x000000, 0xFFFFFF )
+        change_safe()
+        
+    add_integer_with_range( SOUT_CFG_PREFIX "spu-bg-opacity", 0, 0, 255,
+        BG_OPACITY_TEXT, OPACITY_LONGTEXT, false )
+        change_safe()
+        
+    add_integer_with_range( SOUT_CFG_PREFIX "spu-edge-type", 2, 0, 4,
+        EGDE_TYPE_TEXT, NULL, false )
+        change_integer_list( pi_edge_type, ppsz_edge_type )
+        change_safe()
+        
+    add_rgb(SOUT_CFG_PREFIX "spu-edge-color", 0x00000000, EGDE_COLOR_TEXT, NULL)
+        change_integer_list( pi_color_values, ppsz_color_descriptions )
+        change_integer_range( 0x000000, 0xFFFFFF )
+        change_safe()
+        
+    add_integer_with_range( SOUT_CFG_PREFIX "spu-edge-opacity", 255, 0, 255,
+        EGDE_OPACITY_TEXT, OPACITY_LONGTEXT, false )
+        change_safe()
+        
+    add_integer_with_range( SOUT_CFG_PREFIX "spu-font-family", 0, 0, 6,
+        FONT_FAMILY_TEXT, NULL, false )
+        change_integer_list( pi_font_family, ppsz_font_family )
+        change_safe()
+        
+    add_float_with_range( SOUT_CFG_PREFIX "spu-font-scale", 1.1, 0.1, 3.0,
+        FONT_SCALE_TEXT, NULL, false )
+        change_safe()
+    
+    add_integer_with_range( SOUT_CFG_PREFIX "spu-font-style", 0, 0, 3,
+        FONT_STYLE_TEXT, NULL, false )
+        change_integer_list( pi_font_style, ppsz_font_style )
+        change_safe()
+    
     add_obsolete_string(SOUT_CFG_PREFIX "mux")
     add_obsolete_string(SOUT_CFG_PREFIX "mime")
     add_renderer_opts(SOUT_CFG_PREFIX)
@@ -1468,6 +1562,7 @@ static int Open(vlc_object_t *p_this)
     int i_local_server_port;
     int i_device_port;
     std::stringstream ss;
+    CCTextTrackStyle textTrackStyle;
 
     config_ChainParse(p_stream, SOUT_CFG_PREFIX, ppsz_sout_options, p_stream->p_cfg);
 
@@ -1480,6 +1575,17 @@ static int Open(vlc_object_t *p_this)
 
     i_device_port = var_InheritInteger(p_stream, SOUT_CFG_PREFIX "port");
     i_local_server_port = var_InheritInteger(p_stream, SOUT_CFG_PREFIX "http-port");
+    
+    textTrackStyle.text_color = var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-text-color" );
+    textTrackStyle.text_alpha = var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-text-opacity" );
+    textTrackStyle.bg_color = var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-bg-color" );
+    textTrackStyle.bg_alpha = var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-bg-opacity" );
+    textTrackStyle.edge_type = ppsz_edge_type[var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-edge-type" )];
+    textTrackStyle.edge_color = var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-edge-color" );
+    textTrackStyle.edge_alpha = var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-edge-opacity" );
+    textTrackStyle.font_family = ppsz_font_family[var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-font-family" )];
+    textTrackStyle.font_scale = var_InheritFloat( p_stream, SOUT_CFG_PREFIX "spu-font-scale" );
+    textTrackStyle.font_style = ppsz_font_style[var_InheritInteger( p_stream, SOUT_CFG_PREFIX "spu-font-style" )];
 
     var_Create(p_stream, "http-port", VLC_VAR_INTEGER);
     var_SetInteger(p_stream, "http-port", i_local_server_port);
@@ -1497,7 +1603,7 @@ static int Open(vlc_object_t *p_this)
     try
     {
         p_intf = new intf_sys_t( p_this, i_local_server_port, psz_ip, i_device_port,
-                                 httpd_host );
+                                 httpd_host, textTrackStyle );
     }
     catch (const std::runtime_error& err )
     {

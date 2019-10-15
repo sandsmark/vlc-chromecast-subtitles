@@ -89,7 +89,8 @@ static const char* StateToStr( States s )
  * intf_sys_t: class definition
  *****************************************************************************/
 intf_sys_t::intf_sys_t(vlc_object_t * const p_this, int port, std::string device_addr,
-                       int device_port, httpd_host_t *httpd_host)
+                       int device_port, httpd_host_t *httpd_host, 
+                       CCTextTrackStyle textTrackStyle)
  : m_module(p_this)
  , m_device_port(device_port)
  , m_device_addr(device_addr)
@@ -110,6 +111,7 @@ intf_sys_t::intf_sys_t(vlc_object_t * const p_this, int port, std::string device
  , m_cc_eof( false )
  , m_pace( false )
  , m_subtitles_enabled( false )
+ , m_textTrackStyle( textTrackStyle )
  , m_meta( NULL )
  , m_httpd( httpd_host, port )
  , m_httpd_file(NULL)
@@ -123,7 +125,7 @@ intf_sys_t::intf_sys_t(vlc_object_t * const p_this, int port, std::string device
 {
     m_communication = new ChromecastCommunication( p_this,
         getHttpStreamPath(), getHttpStreamPort(), getHttpVttPath(),
-        m_device_addr.c_str(), m_device_port );
+        m_device_addr.c_str(), m_device_port, m_textTrackStyle );
 
     m_ctl_thread_interrupt = vlc_interrupt_create();
     if( unlikely(m_ctl_thread_interrupt == NULL) )
@@ -222,7 +224,8 @@ void intf_sys_t::reinit()
                                                        getHttpStreamPort(),
                                                        getHttpVttPath(),
                                                        m_device_addr.c_str(),
-                                                       m_device_port );
+                                                       m_device_port,
+                                                       m_textTrackStyle );
     } catch (const std::runtime_error& err )
     {
         msg_Warn( m_module, "failed to re-init ChromecastCommunication (%s)", err.what() );

@@ -36,7 +36,8 @@
 
 ChromecastCommunication::ChromecastCommunication( vlc_object_t* p_module,
     std::string serverPath, unsigned int serverPort, std::string vttPath,
-    const char* targetIP, unsigned int devicePort )
+    const char* targetIP, unsigned int devicePort, 
+    CCTextTrackStyle textTrackStyle)
     : m_module( p_module )
     , m_creds( NULL )
     , m_tls( NULL )
@@ -45,6 +46,7 @@ ChromecastCommunication::ChromecastCommunication( vlc_object_t* p_module,
     , m_serverPath( serverPath )
     , m_serverPort( serverPort )
     , m_vttPath( vttPath )
+    , m_textTrackStyle( textTrackStyle )
 {
     if (devicePort == 0)
         devicePort = CHROMECAST_CONTROL_PORT;
@@ -366,13 +368,22 @@ std::string ChromecastCommunication::GetMedia( const std::string& mime,
        <<   "\"subType\": \"SUBTITLES\","
        <<   "\"language\": \"en-US\""
        <<  "}]"
+       << std::setfill('0') << std::hex << std::uppercase
        << ",\"textTrackStyle\": {"
-       <<   "\"backgroundColor\": \"#FFFFFF00\","
-       <<   "\"edgeType\": \"DROP_SHADOW\","
-       <<   "\"edgeColor\": \"#000000FF\","
-       <<   "\"fontGenericFamily\": \"SANS_SERIF\","
-       <<   "\"fontScale\": 1.1,"
-       <<   "\"fontStyle\": \"NORMAL\""
+       <<   "\"foregroundColor\": \"#"
+       << 	std::setw(6) << m_textTrackStyle.text_color
+       <<	std::setw(2) << m_textTrackStyle.text_alpha << "\","
+       <<   "\"backgroundColor\": \"#"
+       << 	std::setw(6) << m_textTrackStyle.bg_color
+       <<	std::setw(2) << m_textTrackStyle.bg_alpha << "\","
+       <<   "\"edgeType\": \"" << m_textTrackStyle.edge_type << "\","
+       <<   "\"edgeColor\": \"#"
+       << 	std::setw(6) << m_textTrackStyle.edge_color
+       <<	std::setw(2) << m_textTrackStyle.edge_alpha << "\","
+       <<   "\"fontGenericFamily\": \"" << m_textTrackStyle.font_family << "\","
+       <<	std::fixed << std::setprecision( 2 )
+       <<   "\"fontScale\": " << m_textTrackStyle.font_scale << ","
+       <<   "\"fontStyle\": \"" << m_textTrackStyle.font_style << "\""
        <<  "}";
 #else
 ;
