@@ -102,6 +102,7 @@ struct sout_stream_sys_t
         , b_supports_video(has_video)
         , i_port(port)
         , first_video_keyframe_pts( -1 )
+        , first_frame_pts( -1 )
         , es_changed( true )
         , cc_has_input( false )
         , cc_flushing( false )
@@ -158,6 +159,7 @@ struct sout_stream_sys_t
 
     sout_stream_id_sys_t *             video_proxy_id;
     vlc_tick_t                         first_video_keyframe_pts;
+    vlc_tick_t                         first_frame_pts;
 
     bool                               es_changed;
     bool                               cc_has_input;
@@ -298,9 +300,13 @@ static int ProxySend(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
             // In case of video, the first block must be a keyframe
             if (id == p_sys->video_proxy_id)
             {
+				if (p_sys->first_frame_pts == -1)
+					p_sys->first_frame_pts = p_buffer->i_pts;
                 if (p_sys->first_video_keyframe_pts == -1
-                 && p_buffer->i_flags & BLOCK_FLAG_TYPE_I)
+                 && p_buffer->i_flags & BLOCK_FLAG_TYPE_I){
                     p_sys->first_video_keyframe_pts = p_buffer->i_pts;
+                    p_sys->p_intf->setSoutDelay(p_buffer->i_pts - p_sys->first_frame_pts);
+				}
             }
             else // no keyframe for audio
                 p_buffer->i_flags &= ~BLOCK_FLAG_TYPE_I;
@@ -950,6 +956,7 @@ bool sout_stream_sys_t::startSoutChain(sout_stream_t *p_stream,
     msg_Dbg( p_stream, "Creating chain %s", sout.c_str() );
     cc_has_input = false;
     first_video_keyframe_pts = -1;
+    first_frame_pts = -1;
     video_proxy_id = NULL;
     has_video = false;
     out_streams = new_streams;

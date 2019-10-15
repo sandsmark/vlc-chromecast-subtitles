@@ -180,6 +180,8 @@ struct intf_sys_t
     void setRetryOnFail(bool);
     void setHasInput(const std::string mime_type = "");
     void setSubtitlesEnabled(bool enabled);
+    void setSoutDelay(vlc_tick_t delay);
+    vlc_tick_t getSoutDelay();
 
     void setOnInputEventCb(on_input_event_itf on_input_event, void *on_input_event_data);
     void setDemuxEnabled(bool enabled, on_paused_changed_itf on_paused_changed,
@@ -244,6 +246,8 @@ private:
     static void set_pause_state(void*, bool paused, vlc_tick_t delay);
 
     static void set_meta(void*, vlc_meta_t *p_meta);
+    
+    static vlc_tick_t get_sout_delay(void*);
 
     void prepareHttpArtwork();
 
@@ -309,6 +313,7 @@ private:
     vlc_tick_t        m_cc_time_date;
     vlc_tick_t        m_cc_time;
     vlc_tick_t        m_pause_delay;
+    vlc_tick_t        m_sout_delay;
 
     /* shared structure with the demux-filter */
     chromecast_common      m_common;

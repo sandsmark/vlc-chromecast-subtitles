@@ -186,7 +186,10 @@ struct demux_cc
 
     vlc_tick_t getCCTime()
     {
-        return p_renderer->pf_get_time( p_renderer->p_opaque );
+        vlc_tick_t cc_time = p_renderer->pf_get_time( p_renderer->p_opaque );
+        if( cc_time != VLC_TICK_INVALID )
+			cc_time += p_renderer->pf_get_sout_delay( p_renderer->p_opaque );
+		return cc_time;
     }
 
     vlc_tick_t getTime()
