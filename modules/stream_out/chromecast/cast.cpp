@@ -1324,9 +1324,9 @@ static int Send(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
     sout_stream_sys_t *p_sys = reinterpret_cast<sout_stream_sys_t *>( p_stream->p_sys );
     sout_stream_id_sys_t *id = reinterpret_cast<sout_stream_id_sys_t *>( _id );
     vlc_mutex_locker locker(&p_sys->lock);
-        
 
-    if( p_sys->isFlushing( p_stream ) || p_sys->cc_eof )
+    if( p_sys->isFlushing( p_stream ) || 
+		(p_sys->cc_eof && id != p_sys->out_spu_stream) )
     {
         block_ChainRelease( p_buffer );
         return VLC_SUCCESS;
