@@ -193,6 +193,7 @@ struct intf_sys_t
     int pace();
     void sendInputEvent(enum cc_input_event event, union cc_input_arg arg);
     vlc_tick_t getPauseDelay();
+    void resetPauseDelay();
 
     unsigned int getHttpStreamPort() const;
     std::string getHttpStreamPath() const;

@@ -140,7 +140,7 @@ struct sout_stream_sys_t
                            sout_stream_id_sys_t *stream, const std::string &sout);
     void stopSoutSpuChain(sout_stream_t* p_stream);
     
-    void fixSPUBlock(block_t* p_buffer);
+    void fixBlockTS(block_t* p_buffer, bool relative = false);
 
     httpd_host_t      *httpd_host;
     httpd_host_t      *httpd_host_vtt;
@@ -319,11 +319,6 @@ static int ProxySend(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
             }
         }
         
-        vlc_tick_t pause_delay = p_sys->p_intf->getPauseDelay();
-        if( p_buffer->i_pts != VLC_TICK_INVALID )
-            p_buffer->i_pts -= pause_delay;
-        if( p_buffer->i_dts != VLC_TICK_INVALID )
-            p_buffer->i_dts -= pause_delay;
         
         int ret = sout_StreamIdSend(p_stream->p_next, id, p_buffer);
         if (ret == VLC_SUCCESS && !p_sys->cc_has_input)
@@ -952,6 +947,8 @@ bool sout_stream_sys_t::startSoutChain(sout_stream_t *p_stream,
                                        const std::string &sout, int new_transcoding_state)
 {
     stopSoutChain( p_stream );
+    
+    p_intf->resetPauseDelay();
 
     msg_Dbg( p_stream, "Creating chain %s", sout.c_str() );
     cc_has_input = false;
@@ -1316,13 +1313,21 @@ bool sout_stream_sys_t::isFlushing( sout_stream_t *p_stream )
     return false;
 }
 
-void sout_stream_sys_t::fixSPUBlock(block_t* p_buffer){
+void sout_stream_sys_t::fixBlockTS(block_t* p_buffer, bool relative){
 	
+	vlc_tick_t delay = 0;
 	vlc_tick_t pause_delay = p_intf->getPauseDelay();
+	
+	if (pause_delay != VLC_TICK_INVALID)
+		delay = pause_delay;
+		
+	if (relative && first_video_keyframe_pts>0)
+		delay += first_video_keyframe_pts;
+	
 	if( p_buffer->i_pts != VLC_TICK_INVALID )
-		p_buffer->i_pts -= (first_video_keyframe_pts+pause_delay);
+		p_buffer->i_pts -= delay;
 	if( p_buffer->i_dts != VLC_TICK_INVALID )
-		p_buffer->i_dts -= (first_video_keyframe_pts+pause_delay);
+		p_buffer->i_dts -= delay;
 		
 }
 
@@ -1349,7 +1354,7 @@ static int Send(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
 		
 		block_t* p_curr = p_sys->m_first_spu_data;
 		while (p_curr){
-			p_sys->fixSPUBlock(p_curr);
+			p_sys->fixBlockTS(p_curr, true);
 			
 			block_t* p_next = p_curr->p_next;
 			p_curr->p_next = NULL;
@@ -1371,8 +1376,13 @@ static int Send(sout_stream_t *p_stream, void *_id, block_t *p_buffer)
             //block_ChainRelease( p_buffer );
             return VLC_SUCCESS;
         }
-        p_sys->fixSPUBlock(p_buffer);
-    }
+        p_sys->fixBlockTS(p_buffer, true);
+        
+    } else {
+		    
+		p_sys->fixBlockTS(p_buffer);
+	
+	}
 
     int ret = sout_StreamIdSend(id->p_out, next_id, p_buffer);
     if (ret != VLC_SUCCESS)

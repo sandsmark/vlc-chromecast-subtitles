@@ -1163,6 +1163,12 @@ void intf_sys_t::setPauseState(bool paused, vlc_tick_t delay)
             m_communication->msgPlayerPause( m_appTransportId, m_mediaSessionId );
 }
 
+void intf_sys_t::resetPauseDelay()
+{
+	vlc::threads::mutex_locker lock( m_lock );
+	m_pause_delay = VLC_TICK_INVALID;
+}
+
 vlc_tick_t intf_sys_t::getPauseDelay()
 {
     vlc::threads::mutex_locker lock( m_lock );
