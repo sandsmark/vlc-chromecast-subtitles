@@ -61,7 +61,7 @@ static void WriteText( const char *psz, bo_t *box, char *c_last )
         if( p )
         {
             bo_add_mem( box, p - psz, psz );
-            if( *c_last == '\n' )
+            if( *c_last == '\n' && p == psz)
                 bo_add_8( box, '!' ); /* Add space */
             bo_add_8( box, '\n' );
             *c_last = '\n';
