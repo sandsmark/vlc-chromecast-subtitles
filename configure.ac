@@ -4290,7 +4290,7 @@ PKG_ENABLE_MODULES_VLC([UPNP], [upnp], [libupnp], [Intel UPNP SDK],[auto])
 dnl
 dnl mDNS using libmicrodns
 dnl
-PKG_ENABLE_MODULES_VLC([MICRODNS], [], [microdns >= 0.1.2], [mDNS services discovery], [auto])
+PKG_ENABLE_MODULES_VLC([MICRODNS], [], [microdns >= 0.1.0], [mDNS services discovery], [auto])
 
 
 EXTEND_HELP_STRING([Misc options:])
