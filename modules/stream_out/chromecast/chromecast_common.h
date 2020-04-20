@@ -69,7 +69,7 @@ typedef struct
     void (*pf_set_pause_state)(void*, bool paused, vlc_tick_t delay);
 
     void (*pf_set_meta)(void*, vlc_meta_t *p_meta);
-    
+
     vlc_tick_t (*pf_get_sout_delay)(void*);
 
 } chromecast_common;

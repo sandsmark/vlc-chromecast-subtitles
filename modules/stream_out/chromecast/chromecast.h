@@ -72,7 +72,7 @@ static const std::string NAMESPACE_RECEIVER         = "urn:x-cast:com.google.cas
 
 struct CCTextTrackStyle
 {
-	int text_color;
+    int text_color;
     int text_alpha;
     int bg_color;
     int bg_alpha;
@@ -264,7 +264,7 @@ private:
     static void set_pause_state(void*, bool paused, vlc_tick_t delay);
 
     static void set_meta(void*, vlc_meta_t *p_meta);
-    
+
     static vlc_tick_t get_sout_delay(void*);
 
     void prepareHttpArtwork();

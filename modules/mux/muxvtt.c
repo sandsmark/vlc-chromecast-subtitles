@@ -104,31 +104,31 @@ static block_t * UnpackISOBMFF( block_t *p_block )
                 }
             }
 
-			mtime_t start_time = p_block->i_dts - VLC_TICK_0;
+            mtime_t start_time = p_block->i_dts - VLC_TICK_0;
             mtime_t end_time = p_block->i_dts - VLC_TICK_0 + p_block->i_length;
-            
+
             if (start_time < 0)
-				start_time = 0;
-				
-			if (end_time < 0)
-				end_time = 0;
-				
-			if (end_time > start_time) {
-            
-				if( psz_iden )
-					vlc_memstream_printf( &ms, "%s\n", psz_iden );
-				
-				OutputTime( &ms, start_time );
-				vlc_memstream_printf( &ms, " --> " );
-				OutputTime( &ms, end_time );
+                start_time = 0;
 
-				if( psz_sttg )
-					vlc_memstream_printf( &ms, " %s\n", psz_sttg );
-				else
-					vlc_memstream_putc( &ms, '\n' );
+            if (end_time < 0)
+                end_time = 0;
 
-				vlc_memstream_printf( &ms, "%s\n\n", psz_payl );
-			}
+            if (end_time > start_time) {
+
+                if( psz_iden )
+                    vlc_memstream_printf( &ms, "%s\n", psz_iden );
+
+                OutputTime( &ms, start_time );
+                vlc_memstream_printf( &ms, " --> " );
+                OutputTime( &ms, end_time );
+
+                if( psz_sttg )
+                    vlc_memstream_printf( &ms, " %s\n", psz_sttg );
+                else
+                    vlc_memstream_putc( &ms, '\n' );
+
+                vlc_memstream_printf( &ms, "%s\n\n", psz_payl );
+            }
 
             free( psz_iden );
             free( psz_sttg );

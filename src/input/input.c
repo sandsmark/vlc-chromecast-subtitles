@@ -2328,7 +2328,7 @@ static bool Control( input_thread_t *p_input,
 
             // refresh all slaves
             if( priv->i_slave > 0 )
-				SlaveSeek( p_input );
+                SlaveSeek( p_input );
 #endif
             break;
         }
@@ -2916,7 +2916,6 @@ static void SlaveDemux( input_thread_t *p_input )
         msg_Err( p_input, "demux doesn't like DEMUX_GET_TIME" );
         return;
     }
-    //fprintf(stderr, "SLaveDemux to %" PRId64 "\n", i_time);
 
     for( i = 0; i < input_priv(p_input)->i_slave; i++ )
     {

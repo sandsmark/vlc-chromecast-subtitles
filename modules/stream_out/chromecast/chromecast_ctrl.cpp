@@ -89,7 +89,7 @@ static const char* StateToStr( States s )
  * intf_sys_t: class definition
  *****************************************************************************/
 intf_sys_t::intf_sys_t(vlc_object_t * const p_this, int port, std::string device_addr,
-                       int device_port, httpd_host_t *httpd_host, 
+                       int device_port, httpd_host_t *httpd_host,
                        CCTextTrackStyle textTrackStyle)
  : m_module(p_this)
  , m_device_port(device_port)
@@ -142,7 +142,7 @@ intf_sys_t::intf_sys_t(vlc_object_t * const p_this, int port, std::string device
     m_common.pf_send_input_event = send_input_event;
     m_common.pf_set_pause_state  = set_pause_state;
     m_common.pf_set_meta         = set_meta;
-    m_common.pf_get_sout_delay	 = get_sout_delay;
+    m_common.pf_get_sout_delay   = get_sout_delay;
 
     assert( var_Type( vlc_object_parent(vlc_object_parent(m_module)), CC_SHARED_VAR_NAME) == 0 );
     if (var_Create( vlc_object_parent(vlc_object_parent(m_module)), CC_SHARED_VAR_NAME, VLC_VAR_ADDRESS ) == VLC_SUCCESS )
@@ -1168,8 +1168,8 @@ void intf_sys_t::setPauseState(bool paused, vlc_tick_t delay)
 
 void intf_sys_t::resetPauseDelay()
 {
-	vlc::threads::mutex_locker lock( m_lock );
-	m_pause_delay = VLC_TICK_INVALID;
+    vlc::threads::mutex_locker lock( m_lock );
+    m_pause_delay = VLC_TICK_INVALID;
 }
 
 vlc_tick_t intf_sys_t::getPauseDelay()
@@ -1311,6 +1311,6 @@ void intf_sys_t::set_meta(void *pt, vlc_meta_t *p_meta)
 
 vlc_tick_t intf_sys_t::get_sout_delay(void *pt)
 {
-	intf_sys_t *p_this = static_cast<intf_sys_t*>(pt);
-	return p_this->getSoutDelay();
+    intf_sys_t *p_this = static_cast<intf_sys_t*>(pt);
+    return p_this->getSoutDelay();
 }

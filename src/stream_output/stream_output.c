@@ -536,11 +536,7 @@ void sout_MuxDeleteStream( sout_mux_t *p_mux, sout_input_t *p_input )
         }
 
         block_FifoRelease( p_input->p_fifo );
-        fprintf(stderr, "CLEAN: %d\n", p_input->fmt.i_cat);
-        if (p_input->fmt.i_cat == VIDEO_ES)
-            video_format_Print(p_mux, "clean vid", &p_input->fmt);
         es_format_Clean( &p_input->fmt );
-        fprintf(stderr, "CLEANED\n");
         free( p_input );
     }
 }

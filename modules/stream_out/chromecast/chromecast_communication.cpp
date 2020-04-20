@@ -36,7 +36,7 @@
 
 ChromecastCommunication::ChromecastCommunication( vlc_object_t* p_module,
     std::string serverPath, unsigned int serverPort, std::string vttPath,
-    const char* targetIP, unsigned int devicePort, 
+    const char* targetIP, unsigned int devicePort,
     CCTextTrackStyle textTrackStyle)
     : m_module( p_module )
     , m_creds( NULL )
@@ -359,7 +359,6 @@ std::string ChromecastCommunication::GetMedia( const std::string& mime,
     ss << "\"contentId\":\"" << stream_url.str() << "\""
        << ",\"streamType\":\"LIVE\""
        << ",\"contentType\":\"" << mime << "\""
-#if 1
        << ",\"tracks\": [{"
        <<   "\"trackId\": 1,"
        <<   "\"trackContentId\": \"" << vtt_url.str() << "\","
@@ -371,23 +370,20 @@ std::string ChromecastCommunication::GetMedia( const std::string& mime,
        << std::setfill('0') << std::hex << std::uppercase
        << ",\"textTrackStyle\": {"
        <<   "\"foregroundColor\": \"#"
-       << 	std::setw(6) << m_textTrackStyle.text_color
-       <<	std::setw(2) << m_textTrackStyle.text_alpha << "\","
+       <<  std::setw(6) << m_textTrackStyle.text_color
+       <<  std::setw(2) << m_textTrackStyle.text_alpha << "\","
        <<   "\"backgroundColor\": \"#"
-       << 	std::setw(6) << m_textTrackStyle.bg_color
-       <<	std::setw(2) << m_textTrackStyle.bg_alpha << "\","
+       <<  std::setw(6) << m_textTrackStyle.bg_color
+       <<  std::setw(2) << m_textTrackStyle.bg_alpha << "\","
        <<   "\"edgeType\": \"" << m_textTrackStyle.edge_type << "\","
        <<   "\"edgeColor\": \"#"
-       << 	std::setw(6) << m_textTrackStyle.edge_color
-       <<	std::setw(2) << m_textTrackStyle.edge_alpha << "\","
+       <<  std::setw(6) << m_textTrackStyle.edge_color
+       <<  std::setw(2) << m_textTrackStyle.edge_alpha << "\","
        <<   "\"fontGenericFamily\": \"" << m_textTrackStyle.font_family << "\","
-       <<	std::fixed << std::setprecision( 2 )
+       <<  std::fixed << std::setprecision( 2 )
        <<   "\"fontScale\": " << m_textTrackStyle.font_scale << ","
        <<   "\"fontStyle\": \"" << m_textTrackStyle.font_style << "\""
        <<  "}";
-#else
-;
-#endif
     return ss.str();
 }
 

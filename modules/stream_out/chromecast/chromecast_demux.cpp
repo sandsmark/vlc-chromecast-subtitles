@@ -135,7 +135,6 @@ struct demux_cc
 
         p_renderer->pf_set_demux_enabled(p_renderer->p_opaque, true,
                                          on_paused_changed_cb, p_demux);
-                      
 
         resetTimes();
     }
@@ -163,7 +162,7 @@ struct demux_cc
 
         m_last_time = m_start_time;
         m_last_pos = m_start_pos;
-     
+
     }
 
     ~demux_cc()
@@ -188,8 +187,8 @@ struct demux_cc
     {
         vlc_tick_t cc_time = p_renderer->pf_get_time( p_renderer->p_opaque );
         if( cc_time != VLC_TICK_INVALID )
-			cc_time += p_renderer->pf_get_sout_delay( p_renderer->p_opaque );
-		return cc_time;
+            cc_time += p_renderer->pf_get_sout_delay( p_renderer->p_opaque );
+        return cc_time;
     }
 
     vlc_tick_t getTime()
@@ -351,8 +350,8 @@ struct demux_cc
 
         case DEMUX_SET_POSITION:
         {
-			m_pause_delay = m_pause_date = VLC_TICK_INVALID;
-			
+            m_pause_delay = m_pause_date = VLC_TICK_INVALID;
+
             double pos = va_arg( args, double );
             /* Force unprecise seek */
             int ret = demux_Control( p_demux->p_next, DEMUX_SET_POSITION, pos, false );
@@ -365,8 +364,8 @@ struct demux_cc
         }
         case DEMUX_SET_TIME:
         {
-			m_pause_delay = m_pause_date = VLC_TICK_INVALID;
-			
+            m_pause_delay = m_pause_date = VLC_TICK_INVALID;
+
             vlc_tick_t time = va_arg( args, vlc_tick_t );
             /* Force unprecise seek */
             int ret = demux_Control( p_demux->p_next, DEMUX_SET_TIME, time, false );
@@ -384,7 +383,7 @@ struct demux_cc
             va_copy( ap, args );
             int paused = va_arg( ap, int );
             va_end( ap );
-            
+
             if (paused)
             {
                 if (m_pause_date == VLC_TICK_INVALID)
