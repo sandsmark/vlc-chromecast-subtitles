@@ -188,10 +188,6 @@ static int Control( sout_mux_t *p_mux, int i_query, va_list args )
             *(va_arg( args, bool * )) = false;
             return VLC_SUCCESS;
 
-        case MUX_GET_ADD_STREAM_WAIT:
-            *(va_arg( args, bool * )) = true;
-            return VLC_SUCCESS;
-
         default:
             return VLC_EGENERIC;
    }

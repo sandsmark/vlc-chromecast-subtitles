@@ -1385,7 +1385,7 @@ bool sout_stream_sys_t::isFlushing( sout_stream_t *p_stream )
     return false;
 }
 
-void sout_stream_sys_t::fixBlockTS(block_t* p_buffer, bool relative
+void sout_stream_sys_t::fixBlockTS(block_t* p_buffer, bool relative)
 {
     vlc_tick_t delay = 0;
     vlc_tick_t pause_delay = p_intf->getPauseDelay();
