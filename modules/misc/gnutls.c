@@ -395,7 +395,7 @@ static vlc_tls_t *gnutls_ClientSessionOpen(vlc_tls_client_t *crd,
     return &priv->tls;
 }
 
-static int gnutls_ClientHandshake(vlc_tls_t *tls,
+static int gnutls_ClientHandshake(vlc_tls_client_t *crd, vlc_tls_t *tls,
                                   const char *host, const char *service,
                                   char **restrict alp)
 {
@@ -420,6 +420,16 @@ static int gnutls_ClientHandshake(vlc_tls_t *tls,
 
     if (status == 0) /* Good certificate */
         return 0;
+
+    if (status == (GNUTLS_CERT_SIGNER_NOT_FOUND | GNUTLS_CERT_INVALID | GNUTLS_CERT_UNEXPECTED_OWNER) &&
+            (crd->insecure))
+    {
+        msg_Info( crd, "Accepting self-signed/untrusted CA certificate." );
+        return 0;
+    }
+    if (crd->insecure) {
+        msg_Info( crd, "should be Accepting self-signed/untrusted CA certificate %d.", status );
+    }
 
     /* Bad certificate */
     gnutls_datum_t desc;

@@ -140,6 +140,8 @@ typedef struct vlc_tls_client
 {
     struct vlc_object_t obj;
     const struct vlc_tls_client_operations *ops;
+    /** Accept self-signed and what have you */
+    bool insecure;
     void *sys;
 } vlc_tls_client_t;
 
@@ -147,7 +149,7 @@ struct vlc_tls_client_operations
 {
     vlc_tls_t *(*open)(struct vlc_tls_client *, vlc_tls_t *sock,
                        const char *host, const char *const *alpn);
-    int  (*handshake)(vlc_tls_t *session,
+    int  (*handshake)(struct vlc_tls_client *, vlc_tls_t *session,
                       const char *hostname, const char *service,
                       char ** /*restrict*/ alp);
     void (*destroy)(struct vlc_tls_client *);

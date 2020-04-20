@@ -55,6 +55,8 @@ ChromecastCommunication::ChromecastCommunication( vlc_object_t* p_module,
     if (m_creds == NULL)
         throw std::runtime_error( "Failed to create TLS client" );
 
+    m_creds->insecure = true;
+
     m_tls = vlc_tls_SocketOpenTLS( m_creds, targetIP, devicePort, "tcps",
                                    NULL, NULL );
     if (m_tls == NULL)
